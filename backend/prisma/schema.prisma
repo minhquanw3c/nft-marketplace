@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(uuid())
+  wallet      String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  nfts         NFT[]
+  listings     Listing[]
+  boughtTxns   Transaction[] @relation("BuyerTransactions")
+  soldTxns     Transaction[] @relation("SellerTransactions")
+}
+
+model NFT {
+  id          String   @id @default(uuid())
+  tokenId     String   @unique
+  ownerId     String
+  metadataUrl String
+  price       Decimal
+  createdAt   DateTime @default(now())
+
+  owner       User @relation(fields: [ownerId], references: [id])
+  listings    Listing[]
+  transactions Transaction[]
+}
+
+model Listing {
+  id         String   @id @default(uuid())
+  nftId      String
+  sellerId   String
+  price      Decimal
+  status     String   @default("active") // active, sold, canceled
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  nft   NFT  @relation(fields: [nftId], references: [id])
+  seller User @relation(fields: [sellerId], references: [id])
+}
+
+model Transaction {
+  id         String   @id @default(uuid())
+  nftId      String
+  buyerId    String
+  sellerId   String
+  price      Decimal
+  txHash     String   @unique
+  createdAt  DateTime @default(now())
+
+  nft    NFT  @relation(fields: [nftId], references: [id])
+  buyer  User @relation(fields: [buyerId], references: [id], name: "BuyerTransactions")
+  seller User @relation(fields: [sellerId], references: [id], name: "SellerTransactions")
+}
